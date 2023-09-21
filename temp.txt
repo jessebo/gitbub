@@ -1,0 +1,2465 @@
+#ifndef TRAFFIC_UTILS_H_
+#define TRAFFIC_UTILS_H_
+
+#include <string>
+#include <vector>
+#include <set>
+#include <stdint.h>
+#include <zlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <curl/curl.h>
+#include <json/json.h>
+
+
+namespace BlueHou {
+
+#define PI            3.14159265f
+#define PI2           6.2831853f
+
+#define INVALID_WORD    (0xFFFF)
+#define INVALID_DWORD   (0xFFFFFFFF)
+
+typedef float  float32;
+typedef double  float64;
+typedef unsigned long long  uint64;
+
+typedef struct ST_MapTileInfo
+{
+  int psfLevelId;
+  int logicLevelId;
+  int logicLevelIdMin;
+  int logicLevelIdMax;
+  double tileWidth;
+  double tileHeight;
+  double tolerance;
+  int showFlag;
+} SMapTileInfo;
+
+
+typedef struct ST_MapLogicTileInfo
+{
+  int psfLevelId;
+  int logicLevelId;
+  double tileWidth;
+  double tileHeight;
+} SMapLogicTileInfo;
+
+// 网格信息
+struct GridCfgInfo {
+  uint32_t    level;
+  uint32_t    reslution;      // reslution
+  double    gridWidth;      // mesh width
+  double    gridHeight;      // mesh height
+
+  double    minXOfArea;      // min longitude
+  double    minYOfArea;      // min latitude
+  double    maxXOfArea;      // max longitude
+  double    maxYOfArea;      // max latitude
+};
+
+class TrafficUtils {
+public:
+
+    static void SplitStr(const std::string& s, const std::string& delim, std::vector<std::string>& ret);
+
+    static int gzcompress(Bytef *data, uLong ndata, Bytef *zdata, uLong *nzdata);
+    static int gzdecompress(Byte *zdata, uLong nzdata, Byte *data, uLong *ndata);
+    static int gzcompress(const std::string& src, std::string& dst);
+    static int gzdecompress(const std::string& gzip_buf, std::string& ungzip_buf);
+
+    static bool readfile(const std::string& filepath, std::string& strBuffer);
+    static bool writefile(const std::string& filepath, const std::string& str);
+    static void listDir(const char *path, std::vector<std::string> & fullname_vec);
+    static bool travelDir(const char *dbPath, std::vector<std::string> &strvec);
+
+    static int zcompress(Bytef *data, uLong ndata, Bytef *zdata, uLong *nzdata);
+    static int zdecompress(Byte *zdata, uLong nzdata, Byte *data, uLong *ndata);
+
+
+    static bool GetIp(std::string& strIP);
+    static uint64_t  getMillionTimes();
+    static std::string getTimeStamp(const std::string &format);
+    static std::string getTimeStrByTimeStamp(time_t timestampVal, const std::string &format);
+    static time_t  GetTimestampByStringFmt(const std::string& strTime, const std::string& format);
+
+    static void getFile(const char* _pFilePath, std::vector<std::string>& _vecFile, const char* _pExt);
+
+    static int  httppost(CURL*curlHandler, const std::string &url, const std::string &postData,  \
+                              std::string &strRsp,  bool headflag=false, int timeout = 2);
+    static int  httppostYunos(CURL*curlHandler, const std::string &url, const std::string &postData, \
+                              std::string &strRsp,  bool headflag=false);  
+    static int  httpsget(CURL*curlHandler, const std::string &url, std::string &strRsp, bool headflag=false);
+    static void  setCurlOpt(CURL**curlHandler, curl_slist**httpHeaders);
+    static void  setCurlOptYunos(CURL**curlHandler, curl_slist**httpHeaders, int dataLens);  
+    static std::string  getMD5String(const std::string &app, const std::string &appkey, const std::string&appsecert,std::string &timestamp);
+
+    static std::string  getMD5StringV2(const std::string &app, 
+                                          const std::string &appkey,
+                                          const std::string&appsecert,
+                                          std::string &timestamp,
+                                          const Json::Value &reqJson);
+    static char *url_encode(char const *s, int len);
+
+
+    static int  addSLSFormatLog(const std::string &module, const std::string &message, const std::string &req_id );
+
+    static bool checkUUID(const Json::Value& value);
+
+    static bool checkVIN(const Json::Value& value);
+
+    static bool checkUUIDandVin(const Json::Value& value);
+
+    static int json_ReadInt(Json::Value JV, int ori_value = 0);
+
+    static double json_ReadDouble(Json::Value JV, double ori_value = 0.0);
+
+    static std::string json_ReadString(Json::Value JV, std::string ori_value = "");
+
+    static bool json_ReadBool(Json::Value JV, bool ori_value = true);
+
+    static bool is_digits(const std::string &str);
+    static int httpgzdecompress(Byte *zdata, uLong nzdata, Byte *data, uLong *ndata);
+
+    //给出一个point，和横向扩展xRadius km,纵向扩展yRadius，计算外接矩形框
+    static bool CalRectByPoint(const double lon, const double lat, double xRadius, double yRadius, double &x_min, double &y_min, double &x_max, double &y_max);
+
+    //将tileid转化到14层的tileid
+    static int CvtLogiTileID2Logilayer14TileID(uint64 logitileid64_src, std::vector<uint64>& logilayer14_tileid_vec);
+
+    static int  CvtLogiTileID2LogilayerXTileID(uint64_t logitileid64_src, int dest_level,std::vector<uint64_t>& logilayerX_tileid_vec);
+    //计算point所在的Col 和Row
+    static bool CalRenderColRowByPoint(const double lon, const double lati, const int logic_lvl, int32_t &col ,int32_t &row );
+    static bool CalLogicRenderColRowByPoint(const double lon, const double lati, const int logic_lvl, int32_t &col ,int32_t &row );
+    //计算矩形框所在tileid  可以是多个tile
+    static bool CalTileIdByRect( const double x_min, const double y_min, const double x_max, const double y_max, std::vector<int32_t>&tileid_vec);
+    //计算包含points 各个点的矩形框Rect
+    static bool CalRectByPoints(const std::vector<LonLat>&points, Rect &rect);
+    //三角函数余弦Cos快速近似计算
+    static float32 Com_CalcFastCos(float32 a_fAngle);
+    //三角函数正弦Sin快速近似计算
+    static float32 Com_CalcFastSin(float32 a_fAngle);
+
+    static float64 Com_Sqrt(float64 a_dX);
+    //计算两个点的球面距离
+    static float64 Com_CalcSphLen(float64 a_dPtX1, float64 a_dPtY1, float64 a_dPtX2, float64 a_dPtY2);
+
+    //调用Amap接口查询当前位置所在的城市adcode
+    static std::string getAdCodeByAmapReCode(const std::string &point,const std::string & amap_geo_url, const std::string &amap_geo_key); //"lon,lat"
+    static std::string getAdCodeByAmapReCode(int32_t lon, int32_t lat,const std::string & amap_geo_url, const std::string &amap_geo_key);//1211234567,311234567
+    static std::string getAdCodeByAmapReCode(double lon, double lat,const std::string & amap_geo_url, const std::string &amap_geo_key);//121.1234567, 31.1234567
+
+    //通过CMNS 推送信息到指定uuid的车机
+    static int sendMsgByCmns( const std::string &data, 
+                              int eventtype, 
+                              const std::string &targetuuid,
+                              const std::string &appkey,
+                              const std::string &appsecret,
+                              const std::string &url);
+
+
+    static std::string getMD5SignBanMa(std::vector<PostField>&user_post_fields, const std::string &appsecret);
+    static std::string makePostDataBanMa(std::vector<PostField>&user_post_fields, 
+                                        const std::string &method,
+                                        const std::string &appKey, 
+                                        const std::string &appsecret);
+
+    //openssl HMAC 加密
+    static int hmacEncode(const std::string &algo,
+                  const std::string &key,
+                  const std::string &input,
+                  unsigned char * &output, unsigned int &output_length);
+
+    static std::string urlencode(const std::string &s);
+
+
+    static int sendBanmaOPSAPI(const std::string &method,
+                              const std::string &banma_appkey,
+                              const std::string &banma_appsecret,
+                              std::vector < PostField > &user_post_fields,
+                              std::string &responseStr,
+                              int host_env=2);
+
+    static int physicalToLogicLevel(int physicalLevel);
+    static bool logicLevelToPhysical(int logicLevel, int& physicalLevel);
+    static double resolution(int logicLevel);
+    static bool physicalGridCfg(int physicalLevel, GridCfgInfo& gridCfg);
+    static bool GetTileLB(uint32_t tilex, uint32_t tiley, const GridCfgInfo& gridCfg, LonLat& pt);
+    static bool GetTileRect(uint32_t physicalLevel, uint32_t col, uint32_t row, Rect& rect);
+    static bool GetTileIdRect(uint64 logitileid64_src, Rect& rect);
+
+
+    static std::string base64Encode(const std::string& s);
+    static std::string base64Decode(const std::string& s);
+
+    // 十六进制输出, 参数outLens表示十六进制输出字符串的长度， -1表示按照源buf实际的输出长度输出
+    static std::string GetHexString(const unsigned char* srcBuf, int srcLen, int outLens);
+
+
+    static int sendRequestLbsZebra( const Json::Value &reqJson, 
+                                       const std::string &appkey,
+                                       const std::string &appsecret,
+                                       const std::string &url,
+                                       bool isV2Sign,
+                                       std::string &resultData);
+
+    static int  boostGzip(const std::string &unGzipData,std::string &gzipStr);
+    static int  boostUnGzip(const std::string &gzipData,std::string &unGzipStr);
+
+public:
+    static const int32_t   unit;
+    static const double    level17TileWidth;		// level 17 tile width
+    static const int       tilePixelWidth;		// tile pixel width 
+    static const int       detailestLogicLevel;	// detailest logic level
+    static const unsigned char s_phyToLogicTable[8][2];
+private:
+    static inline bool isBase64(unsigned char c);
+    static std::string base64Encode_(unsigned char const* bytes_to_encode, unsigned int in_len);
+    static std::string base64Decode_(const std::string& encoded_string);
+};
+
+} //namespace yuntraffic
+
+
+#endif /* TRAFFIC_UTILS_H_ */
+
+
+/***************************************************************************************
+ *
+ *  Project:        596
+ *
+ *  Copyright (c)     2014-2017 Banma Technologies Co.,Ltd
+ *                  All rights reserved.
+ *
+ *  This software is supplied only under the terms of a license agreement,
+ *  nondisclosure agreement or other written agreement with Banma Technologies
+ *  Co.,Ltd. Use, redistribution or other disclosure of any parts of this
+ *  software is prohibited except in accordance with the terms of such written
+ *  agreement with Banma Technologies Co.,Ltd. This software is confidential
+ *  and proprietary information of Banma Technologies Co.,Ltd.
+ *
+ ***************************************************************************************
+ *
+ *  File Name: TrafficUtils.cpp
+ *
+ *  General Description: Copyright and file header.
+ *
+ *  Revision History:
+ *                           Modification
+ *   Author                Date(MM/DD/YYYY)   JiraID           Description of Changes
+ *   ---------------------   ------------    ----------     -----------------------------
+ *   cangyue.tl              1/12/2017
+ *
+ ****************************************************************************************/
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <openssl/md5.h>
+#include <openssl/hmac.h>
+
+#include "point_in_polygon.h"
+#include "TrafficUtils.h"
+#include "traffic_cjson/cJSON.h"
+#include "base64.h"
+
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/copy.hpp>
+
+
+using namespace std;
+
+namespace yuntraffic {
+
+SMapTileInfo s_mapTileInfo[] = 
+{
+    { 6, 14, 13, 16, 1098.6328125, 1098.6328125, 1, 0 },
+    { 5, 11, 10, 12, 8789.0625, 8789.0625, 6, 0 },
+    { 4, 9, 8, 9, 35156.25, 35156.25, 100, 0 },
+    // 全国背景数据                                      
+    { 3, 7, 6, 7, 140625, 140625, 600, 0 },
+    { 2, 5, 4, 5, 562500, 562500, 1750, 0 },
+    { 1, 3, 2, 3, 2250000, 2250000, 4000, 0 },
+    { 0, 1, 1, 1, 9000000, 9000000, 11000, 0 },
+};
+
+ SMapLogicTileInfo s_mapLogicTileInfo[] = 
+ {
+  { 6, 17, 274.658203125 / 2, 274.658203125 / 2 },
+  { 6, 16, 274.658203125, 274.658203125},
+  { 6, 15, 549.31640625, 1098.6328125 },
+  { 6, 14, 1098.6328125, 1098.6328125 },
+  { 6, 13, 2197.265625, 2197.265625 },
+
+  { 5, 12, 4394.53125, 4394.53125},
+  { 5, 11, 8789.0625, 8789.0625},
+  { 5, 10, 17578.125, 17578.125},
+
+  { 4, 9, 35156.25, 35156.25},
+  { 4, 8, 70312.5, 703125.5},
+
+  { 3, 7, 140625, 140625},
+  { 3, 6, 281250, 281250},
+
+  { 2, 5, 562500, 562500},
+  { 2, 4, 1125000,1125000},
+
+  { 1, 3, 2250000, 2250000},
+  { 1, 2, 4500000, 4500000},
+
+  { 0, 1, 9000000, 9000000},
+};
+
+
+static unsigned char hexchars[] = "0123456789ABCDEF";
+static size_t writeFunction(void *data, size_t size, size_t nmemb, void *content)  
+{
+    long totalSize = size*nmemb;      
+    std::string* symbolBuffer = (std::string*)content;
+    if(symbolBuffer)      
+    {          
+        symbolBuffer->append((char *)data, ((char*)data)+totalSize);
+    }     
+    return totalSize;
+}
+
+const int32_t   TrafficUtils::unit = 3600;
+const double    TrafficUtils::level17TileWidth = 0.00274658203125 / 2;		// level 17 tile width
+const int       TrafficUtils::tilePixelWidth = 512;		// tile pixel width 
+const int       TrafficUtils::detailestLogicLevel = 17;	// detailest logic level
+const unsigned char TrafficUtils::s_phyToLogicTable[8][2] = {
+    // city
+    { 7, 15 },
+    { 6, 14 },
+    { 5, 11 },
+    { 4, 9 },
+    // global background
+    { 3, 7 },
+    { 2, 5 },
+    { 1, 3 },
+    { 0, 1 }
+};
+
+std::string TrafficUtils::urlencode(const std::string &s)
+{
+    static const char lookup[]= "0123456789abcdef";
+    std::stringstream e;
+    for(int i=0, ix=s.length(); i<ix; i++)
+    {
+        const char& c = s[i];
+        if ( (48 <= c && c <= 57) ||//0-9
+             (65 <= c && c <= 90) ||//abc...xyz
+             (97 <= c && c <= 122) || //ABC...XYZ
+             (c=='-' || c=='_' || c=='.' || c=='~') 
+        )
+        {
+            e << c;
+        }
+        else
+        {
+            e << '%';
+            e << lookup[ (c&0xF0)>>4 ];
+            e << lookup[ (c&0x0F) ];
+        }
+    }
+    return e.str();
+}
+
+/* ***************************************************************************
+*   Function    : Com_Sqrt
+*   Description : 计算平方根
+*   Param       : [I]  float64 a_dX
+*   Return      : float64 平方根
+*                 
+*   Create      : 
+*   Update      :          
+*************************************************************************** */ 
+float64 TrafficUtils::Com_Sqrt(float64 a_dX)
+{
+//#ifdef _WIN32_WCE
+  if (a_dX >= 10000)
+  {
+    if (a_dX < INVALID_DWORD) 
+    { 
+      // 小于ULONG值的开根号计算
+      unsigned long  a = 1;
+      unsigned long  x = (unsigned long)a_dX;
+      unsigned long  b = ( x >> 5 ) + 8;
+      unsigned long  m;
+
+      if(b > INVALID_WORD) b = INVALID_WORD; // ULONG开根号的最大值
+      do{
+        m = (a + b) >> 1;
+        if(m * m > x) b = m - 1;
+        else a = m + 1;
+      }while (b >= a);
+      return  (float64)(a - 1);
+    }
+    else {  // 大于ULONG值的开根号计算
+      uint64  m;
+      uint64  a = 1;
+      uint64  x = (uint64)a_dX;
+      uint64  b = (x >> 5) + 8;
+
+      if(b > 3037000500)
+      {
+        b = 3037000500; // float64开根号的最大值
+      }
+      do
+      {
+        m = (a + b) >> 1;
+        if(m * m > x)
+        {
+          b = m - 1;
+        }else{
+          a = m + 1;
+        }
+      }while (b >= a);
+      return  (float64)(a - 1);
+    }
+  }else{
+    return sqrt(a_dX);
+  }
+// #else  // WIN32 || LINUX
+//  return sqrt(a_dX);
+// #endif
+}
+
+/* ***************************************************************************
+*   Function    : Com_CalcFastCos
+*   Description : 三角函数余弦Cos快速近似计算
+*   Param       : [I]  float32         a_fAngle   角度值[-PI, PI]
+                  [O]
+*   Return      : float32  三角函数余弦Cos近似值  
+*************************************************************************** */ 
+float32 TrafficUtils::Com_CalcFastCos(float32 a_fAngle)
+{
+  float32 fCos;
+  //compute cosine: Sin(x + PI/2) = Cos(x)
+  a_fAngle += 1.57079632f;
+  if (a_fAngle > PI)
+  {
+    a_fAngle -= (float32)PI2;
+  }
+  if (a_fAngle < 0)
+  {
+    fCos = (float32)1.27323954 * a_fAngle + (float32)0.405284735 * a_fAngle * a_fAngle;
+    if (fCos < 0)
+    {
+      fCos = (float32)0.225 * (-fCos * fCos - fCos) + fCos;
+    }else{
+      fCos = (float32)0.225 * (fCos * fCos - fCos) + fCos;
+    }
+  }else{
+    fCos = (float32)1.27323954 * a_fAngle - (float32)0.405284735 * a_fAngle * a_fAngle;
+    if (fCos< 0)
+    {
+      fCos = (float32)0.225 * (-fCos * fCos - fCos) + fCos;
+    }else{
+      fCos = (float32)(0.225) * (fCos * fCos - fCos) + fCos;
+    }
+  } 
+  return fCos;
+}
+
+/* ***************************************************************************
+*   Function    : Com_CalcFastSin
+*   Description : 三角函数正弦Sin快速近似计算
+*   Param       : [I]  float32         a_fAngle   角度值[-PI, PI]
+*   Return      : float32  三角函数正弦Sin近似值  
+*************************************************************************** */ 
+float32 TrafficUtils::Com_CalcFastSin(float32 a_fAngle)
+{
+  //return(Com_CalcFastCos(a_fAngle - 1.57079632675f));
+  //always wrap input angle to -PI..PI
+  float32 fSin;
+  if (a_fAngle < -PI)
+  {
+    a_fAngle += (float32)PI2;
+  }else{
+    if (a_fAngle> PI)
+    {
+      a_fAngle -= (float32)PI2;
+    }
+  }
+  //compute sine
+  if (a_fAngle < 0)
+  {
+    fSin = (float32)1.27323954 * a_fAngle + (float32)0.405284735 * a_fAngle * a_fAngle;
+    if (fSin < 0)
+    {
+      fSin = (float32)0.225 * (-fSin * fSin - fSin) + fSin;
+    }else{
+      fSin = (float32)0.225 * (fSin * fSin - fSin) + fSin;
+    }
+  }
+  else
+  {
+    fSin = (float32)1.27323954 * a_fAngle- (float32)0.405284735 * a_fAngle * a_fAngle;
+    if (fSin < 0)
+    {
+      fSin = (float32)0.225 * (-fSin * fSin - fSin) + fSin;
+    }else{
+      fSin = (float32)0.225 * (fSin * fSin - fSin) + fSin;
+    }
+  }
+
+  return fSin;
+}
+
+/* ***************************************************************************
+*   Function    : Com_CalcSphLen
+*   Description : 计算两个点的球面距离
+*   Param       : [I]  float64         a_dPtX1     点1的X坐标（1/128秒单位）
+*         [I]  float64         a_dPtY1     点1的Y坐标（1/128秒单位）
+*         [I]  float64         a_dPtX2     点2的X坐标（1/128秒单位）
+*         [I]  float64         a_dPtY2     点2的Y坐标（1/128秒单位）
+*   Return      : float64  球面距离（米单位）
+*************************************************************************** */ 
+float64 TrafficUtils:: Com_CalcSphLen(float64 a_dPtX1, float64 a_dPtY1, float64 a_dPtX2, float64 a_dPtY2)
+{
+#define COM_C2RAD         (1.745326e-7)  /**<(PI/(8*60*60*180*16))  1/100000 degree */
+#define COM_RADIUS        6378137       /**<radius */
+
+  float64 dTmp = Com_CalcFastCos((float32)(COM_C2RAD * a_dPtY2));
+  float64 dTmpX = (a_dPtX2 - a_dPtX1) * dTmp;
+  float64 dTmpY = a_dPtY1 - a_dPtY2;
+  return  COM_RADIUS * COM_C2RAD * Com_Sqrt(dTmpX * dTmpX + dTmpY * dTmpY);
+}
+
+
+bool TrafficUtils::CalRectByPoints(const std::vector<LonLat>&points, Rect &rect )
+{
+
+    rect.x_min = points[0].lon;
+    rect.y_min = points[0].lat;
+    rect.x_max = points[0].lon;
+    rect.y_max = points[0].lat;
+
+    for(auto &lonlat:points)
+    {
+       rect.x_min = COM_MIN(rect.x_min, lonlat.lon);
+       rect.y_min = COM_MIN(rect.y_min, lonlat.lat);
+       rect.x_max = COM_MAX(rect.x_max, lonlat.lon);
+       rect.y_max = COM_MAX(rect.y_max, lonlat.lat);
+    }
+
+    rect.x_radius = Com_CalcSphLen(rect.x_min*1E5, rect.y_min*1E5, rect.x_max*1E5, rect.y_min*1E5);
+    rect.y_radius = Com_CalcSphLen(rect.x_min*1E5, rect.y_min*1E5, rect.x_min*1E5, rect.y_max*1E5);
+
+    return true;
+}
+
+bool TrafficUtils::CalRectByPoint(const double lon, const double lat, double xRadius, double yRadius, double &x_min, double &y_min, double &x_max, double &y_max)
+{
+//点P,横向扩展xRadius km, 纵向扩展yRadiuskm, 求出左下角A和右上角的坐标, P1,P2是我们计算过程中的过渡点
+      /*-------P1------------ B
+      -                     -
+      -                     -
+      -        P-           -
+      -                     -
+      -                     -
+      A--------P2------------
+    */
+
+int angle = 90; //假设P的angle是90
+
+//point:P->P1
+double x_P1=0.0f, y_P1=0.0f;
+getEndPoint((angle - 90 + 360) % 360, yRadius, lon, lat, &x_P1, &y_P1);
+
+//point:P1->B
+getEndPoint((angle + 360) % 360, xRadius, x_P1, y_P1, &x_max, &y_max);
+
+//point:P->P2
+double x_P2=0.0f, y_P2=0.0f;
+getEndPoint((angle + 90 + 360) % 360, yRadius, lon, lat, &x_P2, &y_P2);
+
+//point:P2->A
+getEndPoint((angle -180 + 360) % 360, xRadius, x_P2, y_P2, &x_min, &y_min);
+
+return true;
+
+}
+
+bool TrafficUtils::CalRenderColRowByPoint(const double long_, const double lati, const int logic_lvl, int32_t &col ,int32_t &row )
+{
+  int i = 0;
+  int array_len = sizeof(s_mapTileInfo) / sizeof(s_mapTileInfo[0]);
+  for (; i < array_len; ++i)
+  {
+    if (s_mapTileInfo[i].logicLevelIdMin <= logic_lvl && logic_lvl <= s_mapTileInfo[i].logicLevelIdMax)
+    {
+      break;
+    }
+  }
+  if (i >= array_len)
+  {
+    return false;
+  }
+  const SMapTileInfo& tileInfo = s_mapTileInfo[i];
+  double startLon = -180;
+  double startLat = -90;
+  col = (int)((long_ - startLon) * 1E5 / tileInfo.tileWidth);
+  row = (int)((lati - startLat) * 1E5 / tileInfo.tileHeight);
+  if (col < 0 || row < 0)
+  {
+    return false;
+  }
+
+  return true;
+}
+
+
+bool TrafficUtils::CalLogicRenderColRowByPoint(const double long_, const double lati, const int logic_lvl, int32_t &col ,int32_t &row )
+{
+  int i = 0;
+  int array_len = sizeof(s_mapLogicTileInfo) / sizeof(s_mapLogicTileInfo[0]);
+  for (; i < array_len; ++i)
+  {
+    if (s_mapLogicTileInfo[i].logicLevelId==logic_lvl)
+    {
+      break;
+    }
+  }
+  if (i >= array_len)
+  {
+    return false;
+  }
+  const SMapLogicTileInfo& tileInfo = s_mapLogicTileInfo[i];
+  double startLon = -180;
+  double startLat = -90;
+  col = (int)((long_ - startLon) * 1E5 / tileInfo.tileWidth);
+  row = (int)((lati - startLat) * 1E5 / tileInfo.tileHeight);
+  if (col < 0 || row < 0)
+  {
+    return false;
+  }
+
+  return true;
+}
+
+
+
+
+
+
+bool TrafficUtils::CalTileIdByRect(const double x_min,const double y_min,const double x_max, const double y_max, std::vector<int32_t>&tileid_vec)
+{
+
+  int32_t col_min = -1;
+  int32_t row_min = -1;
+  int32_t col_max = -1;
+  int32_t row_max = -1;
+
+  int32_t tileid = -1;
+  bool ret1=TrafficUtils::CalRenderColRowByPoint(x_min, y_min, 12, col_min ,row_min );
+  bool ret2=TrafficUtils::CalRenderColRowByPoint(x_max, y_max, 12, col_max ,row_max );
+
+  if ( !ret1 ||!ret2 )
+  {
+      return false;
+  }
+
+  for (int32_t col =col_min; col <= col_max; col++)
+  {
+      for (int32_t row=row_min; row <= row_max;row++)
+      {
+        tileid = (row<<16)|col;
+        tileid_vec.push_back(tileid);
+      }
+  }
+
+  return true;
+
+}
+
+
+int TrafficUtils::CvtLogiTileID2Logilayer14TileID(uint64 logitileid64_src, std::vector<uint64>& logilayer14_tileid_vec)
+{
+    int dest_logic_layer = 14;   // phylayer 6 -> logiclayer 14
+    // int dest_phy_layer = 6;
+    uint64_t val = logitileid64_src;
+
+    uint8_t src_logi_layer = (val >> 32) & 0x00FF;
+    uint16_t src_col       = (val >> 16) & 0x00FFFF;
+    uint16_t src_row       = (val ) & 0x00FFFF;
+
+    int delt_logic = dest_logic_layer - src_logi_layer;
+    uint16_t min_dest_col = src_col * pow(2, delt_logic);
+    uint16_t max_dest_col = (src_col+1) * pow(2, delt_logic) - 1;
+    uint16_t min_dest_row = src_row * pow(2, delt_logic);
+    uint16_t max_dest_row = (src_row+1) * pow(2, delt_logic) - 1;
+    for(uint16_t c = min_dest_col; c <= max_dest_col; ++c)
+    {
+        for( uint16_t r = min_dest_row; r <= max_dest_row; ++r )
+        {
+            uint64_t destTileID = ((uint64_t)dest_logic_layer << 32) | ((uint64_t)c << 16) | (uint64_t)r;
+            logilayer14_tileid_vec.push_back(destTileID);
+        }
+    }
+    return 0;
+}
+
+
+int TrafficUtils::CvtLogiTileID2LogilayerXTileID(uint64_t logitileid64_src, int dest_level,std::vector<uint64_t>& logilayerX_tileid_vec)
+{
+    int dest_logic_layer = dest_level;
+
+    uint64_t val = logitileid64_src;
+
+    uint8_t src_logi_layer = (val >> 32) & 0x00FF;
+    uint16_t src_col       = (val >> 16) & 0x00FFFF;
+    uint16_t src_row       = (val ) & 0x00FFFF;
+
+    int delt_logic = dest_logic_layer - src_logi_layer;
+
+
+    if (delt_logic >=0) //低level->高level
+    {
+      uint16_t min_dest_col = src_col * pow(2, delt_logic);
+      uint16_t max_dest_col = (src_col+1) * pow(2, delt_logic) - 1;
+      uint16_t min_dest_row = src_row * pow(2, delt_logic);
+      uint16_t max_dest_row = (src_row+1) * pow(2, delt_logic) - 1;
+      for(uint16_t c = min_dest_col; c <= max_dest_col; ++c)
+      {
+          for( uint16_t r = min_dest_row; r <= max_dest_row; ++r )
+          {
+              uint64_t destTileID = ((uint64_t)dest_logic_layer << 32) | ((uint64_t)c << 16) | (uint64_t)r;
+              logilayerX_tileid_vec.push_back(destTileID);
+          }
+      }
+    }
+    else //高level->低level 是有一个
+    {
+        uint16_t c = src_col/pow(2, -delt_logic);
+        uint16_t r = src_row/pow(2, -delt_logic);
+        uint64_t destTileID = ((uint64_t)dest_logic_layer << 32) | ((uint64_t)c << 16) | (uint64_t)r;
+        logilayerX_tileid_vec.push_back(destTileID);
+    } 
+
+    return 0;
+}
+
+void TrafficUtils::SplitStr(const std::string& s, const std::string& delim, std::vector<std::string>& ret) {
+  size_t last = 0;
+  size_t index=s.find_first_of(delim,last);
+  while (index!=std::string::npos)
+  {
+    ret.push_back(s.substr(last,index-last));
+    last=index+1;
+    index=s.find_first_of(delim,last);
+  }
+  if (index-last>0)
+  {
+    ret.push_back(s.substr(last,index-last));
+  }
+}
+
+
+/* Compress data */
+int TrafficUtils::zcompress(Bytef *data, uLong ndata, Bytef *zdata, uLong *nzdata)
+{
+    z_stream c_stream;
+    int err = 0;
+
+    if(data && ndata > 0)
+    {
+        c_stream.zalloc = (alloc_func)0;
+        c_stream.zfree = (free_func)0;
+        c_stream.opaque = (voidpf)0;
+        if(deflateInit(&c_stream, Z_DEFAULT_COMPRESSION) != Z_OK) return -1;
+        c_stream.next_in = data;
+        c_stream.avail_in = ndata;
+        c_stream.next_out = zdata;
+        c_stream.avail_out = *nzdata;
+        while (c_stream.avail_in != 0 && c_stream.total_out < *nzdata) 
+        {
+            if(deflate(&c_stream, Z_NO_FLUSH) != Z_OK) return -1;
+        }
+        if(c_stream.avail_in != 0) return c_stream.avail_in;
+        for (;;) {
+            if((err = deflate(&c_stream, Z_FINISH)) == Z_STREAM_END) break;
+            if(err != Z_OK) return -1;
+        }
+        if(deflateEnd(&c_stream) != Z_OK) return -1;
+        *nzdata = c_stream.total_out;
+        return 0;
+    }
+    return -1;
+}
+
+/* Uncompress data */
+int TrafficUtils::zdecompress(Byte *zdata, uLong nzdata, Byte *data, uLong *ndata)
+{
+    int err = 0;
+    z_stream d_stream; /* decompression stream */
+
+    d_stream.zalloc = (alloc_func)0;
+    d_stream.zfree = (free_func)0;
+    d_stream.opaque = (voidpf)0;
+    d_stream.next_in = zdata;
+    d_stream.avail_in = 0;
+    d_stream.next_out = data;
+    if(inflateInit(&d_stream) != Z_OK) return -1;
+    while (d_stream.total_out < *ndata && d_stream.total_in < nzdata) {
+        d_stream.avail_in = d_stream.avail_out = 1; /* force small buffers */
+        if((err = inflate(&d_stream, Z_NO_FLUSH)) == Z_STREAM_END) break;
+        if(err != Z_OK) return -1;
+    }
+    if(inflateEnd(&d_stream) != Z_OK) return -1;
+    *ndata = d_stream.total_out;
+    return 0;
+}
+
+/* Compress gzip data */
+int TrafficUtils::gzcompress(Bytef *data, uLong ndata, Bytef *zdata, uLong *nzdata)
+{
+    z_stream c_stream;
+    int err = 0;
+
+    if(data && ndata > 0)
+    {
+        c_stream.zalloc = (alloc_func)0;
+        c_stream.zfree = (free_func)0;
+        c_stream.opaque = (voidpf)0;
+        /* windowBits can also be greater than 15 for optional gzip encoding.
+         * Add 16 to windowBits to write a simple gzip header and trailer around the compressed data instead of a zlib wrapper. */
+        if(deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 
+                    MAX_WBITS+16, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+          printf("err 0\n");
+          return -1;
+        }
+        c_stream.next_in = data;
+        c_stream.avail_in = ndata;
+        c_stream.next_out = zdata;
+        c_stream.avail_out = *nzdata;
+        while (c_stream.avail_in != 0 && c_stream.total_out < *nzdata) 
+        {
+            if(deflate(&c_stream, Z_NO_FLUSH) != Z_OK) {
+              printf("err 1\n");
+              return -1;
+            }
+        }
+        if(c_stream.avail_in != 0) {
+          printf("info c_stream.avail_in != 0\n");
+          return c_stream.avail_in;
+        }
+        for (;;) {
+            if((err = deflate(&c_stream, Z_FINISH)) == Z_STREAM_END) break;
+            if(err != Z_OK) {
+              printf("err 2\n");
+              return -1;
+            }
+        }
+        if(deflateEnd(&c_stream) != Z_OK) {
+          printf("err 3\n");
+          return -1;
+        }
+        *nzdata = c_stream.total_out;
+        return 0;
+    }
+    return -1;
+}
+
+
+/* Uncompress gzip data or zlib data with automatic header detection */
+int TrafficUtils::gzdecompress(Byte *zdata, uLong nzdata, Byte *data, uLong *ndata)
+{
+    int err = 0;
+    z_stream d_stream = {0}; /* decompression stream */
+    static char dummy_head[2] = 
+    {
+        0x8 + 0x7 * 0x10,
+        (((0x8 + 0x7 * 0x10) * 0x100 + 30) / 31 * 31) & 0xFF,
+    };
+    d_stream.zalloc = (alloc_func)0;
+    d_stream.zfree = (free_func)0;
+    d_stream.opaque = (voidpf)0;
+    d_stream.next_in = zdata;
+    d_stream.avail_in = 0;
+    d_stream.next_out = data;
+    /* Add 32 to windowBits to enable zlib and gzip decoding with automatic header detection, 
+     *or add 16 to decode only the gzip format
+     */
+    if(inflateInit2(&d_stream, MAX_WBITS+32) != Z_OK) {
+      printf("err 1\n");
+      return -1;
+    }
+    while (d_stream.total_out < *ndata && d_stream.total_in < nzdata) {
+        d_stream.avail_in = d_stream.avail_out = 1; /* force small buffers */
+        if((err = inflate(&d_stream, Z_NO_FLUSH)) == Z_STREAM_END) {
+          break;
+        }
+        if(err != Z_OK ){
+            if(err == Z_DATA_ERROR){
+                d_stream.next_in = (Bytef*) dummy_head;
+                d_stream.avail_in = sizeof(dummy_head);
+                if((err = inflate(&d_stream, Z_NO_FLUSH)) != Z_OK) { 
+                  printf("err 2\n");
+                  return -1;
+                }
+            }else{
+              printf("err 3\n");
+              return -1;
+            } 
+        }
+    }
+    if(inflateEnd(&d_stream) != Z_OK) {
+      printf("err 4\n");
+      return -1;
+    }
+    *ndata = d_stream.total_out;
+    return 0;
+}
+
+int TrafficUtils::gzcompress(const std::string& src, std::string& dst){
+	uLong estimate_gz_data_size = src.size();
+	uLong nzdata = estimate_gz_data_size >= ZLIB_GZ_BUF_MAX_SIZE? estimate_gz_data_size:ZLIB_GZ_BUF_MAX_SIZE;
+
+	Bytef *zdata = new Bytef[nzdata];
+	if(NULL == zdata){
+		return -1;
+	}
+	memset(zdata, 0, nzdata);
+	if( 0 != yuntraffic::TrafficUtils::gzcompress((Bytef *)src.c_str(), src.size(), zdata, &nzdata) ) {
+		//TRAFFIC_LOG("gzcompress() return false, will continue. ndata=%d, nzdata=%llu\n", overlap_pb.size(), nzdata);
+		delete[] zdata;
+		zdata = NULL;
+		return -1;
+	}
+	dst.assign((char *)zdata, nzdata);
+	delete[] zdata;
+	zdata = NULL;
+	return 0;
+}
+
+// TODO
+int TrafficUtils::gzdecompress(const std::string& gzip_buf, std::string& ungzip_buf){
+	uLong estimate_ungz_data_size = gzip_buf.size() * 10;
+	uLong ndata = estimate_ungz_data_size <= ZLIB_BUF_MAX_SIZE? estimate_ungz_data_size:ZLIB_BUF_MAX_SIZE;
+	Bytef * ungzdata = new Bytef[ndata];
+	if (ungzdata == NULL) {
+		return -1;
+	}
+	memset(ungzdata, 0, ndata);
+	if( 0 != yuntraffic::TrafficUtils::gzdecompress((Bytef*)gzip_buf.c_str(), gzip_buf.size(), ungzdata, &ndata) ){
+		delete[] ungzdata;
+		ungzdata = NULL;
+		return -1;
+	}
+	//TRAFFIC_LOG("gzdecompress() ret = %d, ndata=%d\n", ret, ndata);
+	ungzip_buf.assign((char *)ungzdata, ndata);
+	delete[] ungzdata;
+	ungzdata = NULL;
+	return 0;
+}
+
+bool TrafficUtils::readfile(const string & filepath, string &strBuffer){
+	FILE * pFile = fopen(filepath.c_str(), "rb");
+	if (pFile == NULL) {
+		return false;
+	}
+	if(0 != fseek(pFile, 0, SEEK_END)){ // 指针移到文件末位
+		fclose(pFile);
+		return false;
+	}
+	long lSize = ftell(pFile);  // 获得文件长度
+	TRAFFIC_LOG_DEBUG("lSize=%ld\n", lSize);
+	if (lSize > MAX_BINARY_FILE_SIZE|| lSize < 0 ){
+		fclose(pFile);
+		return false;
+	}
+	char * pBuffer = new char[lSize];
+	if(pBuffer == NULL){
+		fclose(pFile);
+		return false;
+	}
+	rewind(pFile);  // 函数rewind()把文件指针移到由stream(流)指定的开始处, 同时清除和流相关的错误和EOF标记
+	//fseek(pFile, 0, SEEK_SET);
+
+	size_t dwRead = 0;
+	dwRead = fread(pBuffer, 1, lSize, pFile);
+	
+	assert(dwRead == lSize);
+	strBuffer.assign(pBuffer, lSize);
+	delete[] pBuffer;
+
+        fclose(pFile);
+	return true;
+}
+
+bool TrafficUtils::writefile(const std::string& filepath, const string& str){
+	std::ofstream fout(filepath.c_str(), std::ios::binary);
+
+	fout.write(str.c_str(), sizeof(char) * (str.size()));
+
+	fout.close();
+
+	return true;
+}
+
+void TrafficUtils::listDir(const char *path, vector<string> & fullname_vec)
+{
+	DIR              *pDir ;
+	struct dirent    *ent  ;
+	char              childpath[512]={0};
+
+	pDir=opendir(path);
+	memset(childpath,0,sizeof(childpath));
+	while((ent=readdir(pDir))!=NULL){
+		if(ent->d_type & DT_DIR){
+			if(strcmp(ent->d_name,".")==0 || strcmp(ent->d_name,"..")==0){
+				continue;
+			}
+			snprintf(childpath, sizeof(childpath), "%s/%s",path,ent->d_name);
+			//printf("path:%s/n",childpath);
+			listDir(childpath, fullname_vec);
+		}else{
+			string ss(path);
+			ss.append("/");
+			ss.append(ent->d_name);
+			//cout<< ss<<endl;
+			fullname_vec.push_back(ss);
+		}
+	}
+	closedir(pDir);
+}
+// listDir is the same as TravelDir ?
+bool TrafficUtils::travelDir(const char *dbPath, vector <string> &strvec) {
+	if(NULL == dbPath) {
+		TRAFFIC_LOG_ERROR("ERROR, dbPath is Null.\n");
+		return false;
+	}
+	DIR *dbDir = opendir(dbPath);
+	if(NULL == dbDir) {
+		TRAFFIC_LOG_ERROR("ERROR, opendir dbPath failed.\n");
+		return false;
+	}
+	struct dirent *dirEnt = NULL;
+
+	while(NULL != (dirEnt = readdir(dbDir))) {
+		if (!strcmp (dirEnt->d_name, ".") || !strcmp (dirEnt->d_name, "..")) {
+		  continue;
+		}
+		string tmp_path(dbPath);
+		string tmcName(dirEnt->d_name);
+		if (*(tmp_path.end () - 1) != '/') {
+		    tmp_path += '/';
+		}
+		tmp_path += dirEnt->d_name;
+		struct stat stat_buf;
+		if( stat(tmp_path.c_str(), &stat_buf) == -1){
+			continue;
+		}
+		if(S_ISREG(stat_buf.st_mode)) {	// position of "mt.dat.tmc" in tmcName
+			strvec.push_back(tmp_path);
+		}else if(S_ISDIR(stat_buf.st_mode)) {	//recurse if is dir
+			travelDir(tmp_path.c_str (), strvec);
+		}else{
+			TRAFFIC_LOG_ERROR("stat_buf neither S_ISDIR, nor S_ISREG, help me, what should I do.\n");
+		}
+	}
+	closedir(dbDir);
+	return true;
+}
+
+
+bool TrafficUtils::GetIp(std::string& strIP) {
+    char hname[128];
+    struct hostent *hent;
+    gethostname(hname, sizeof(hname));
+    //hent = gethostent();
+    hent = gethostbyname(hname);
+
+    //printf("hostname: %s/naddress list: ", hent->h_name);
+    for(int i = 0; hent->h_addr_list[i]; i++) {
+    	char ip[32] = {0};
+        snprintf(ip, 32, "%s", inet_ntoa(*(struct in_addr*)(hent->h_addr_list[i])));
+        TRAFFIC_LOG_DEBUG("ip: %s\n", ip);
+        strIP = ip;
+    }
+    return true;
+}
+
+uint64_t TrafficUtils::getMillionTimes()
+{
+    uint64_t t_ms=0;  // Millisecond
+    struct timespec time = {0, 0};
+    clock_gettime(CLOCK_REALTIME, &time);
+    t_ms = (uint64_t)time.tv_sec * 1000 + time.tv_nsec/1000000;
+    return t_ms;
+}
+
+std::string TrafficUtils::getTimeStamp(const std::string &format)
+{
+    char buffer [20]={0};
+    time_t rawtime;
+    struct tm * timeinfo;
+    time (&rawtime);
+    timeinfo = localtime (&rawtime);
+    strftime (buffer,sizeof(buffer),format.c_str(),timeinfo);
+    std::string timestamp=std::string(buffer);
+    return timestamp;
+}
+
+std::string TrafficUtils::getTimeStrByTimeStamp(time_t timestampVal, const std::string &format)
+{
+    char buffer [20]={0};
+    struct tm * timeinfo;
+
+    timeinfo = localtime (&timestampVal);
+    strftime (buffer, sizeof(buffer), format.c_str(), timeinfo);
+    std::string timestamp=std::string(buffer);
+
+    return timestamp;
+}
+
+time_t  TrafficUtils::GetTimestampByStringFmt(const std::string& strTime, const std::string& format)
+{
+    if( strTime.empty() || format.empty() )
+    {
+        return -1;
+    }
+
+    tm tm_;
+    char* pRet = strptime(strTime.c_str(), format.c_str(), &tm_);
+    if(NULL == pRet)
+    {
+        return -1;
+    }
+    tm_.tm_isdst = -1;
+    time_t timestamp_utc_ = mktime(&tm_);
+
+    return timestamp_utc_;
+}
+
+void TrafficUtils::getFile(const char* _pFilePath, std::vector<std::string>& _vecFile, const char* _pExt)
+{
+    const char* pDot = strstr(_pExt, ".");
+    int nameLen = -1, extLen = -1;
+    
+    if (_pExt[0] != '*')
+    {
+        nameLen = pDot - _pExt + 1;
+    }
+    if (pDot[1] != '*')
+    {
+        extLen = strlen(pDot);
+    }
+
+    DIR *pstDir = NULL;
+    struct dirent *pstFile = NULL;
+    if (pstDir = opendir(_pFilePath))
+    {
+        while(pstFile = readdir(pstDir))
+        {
+            if (!(pstFile->d_type & DT_DIR))
+            {
+                if (nameLen != -1 && strncmp(pstFile->d_name, _pExt, nameLen) != 0)
+                {
+                    continue;
+                }
+                if (extLen != -1)
+                {
+                    int len = (int)strlen(pstFile->d_name);
+                    if (len < extLen || strncmp(pstFile->d_name + len - extLen, pDot, extLen) != 0)
+                    {
+                        continue;
+                    }
+                }
+                _vecFile.push_back(pstFile->d_name);
+            }
+        }
+    }
+    closedir(pstDir);
+}
+
+char *TrafficUtils::url_encode(char const *s, int len)
+{    
+    register unsigned char c;
+    unsigned char *to, *start;
+    unsigned char const *from, *end;
+    from = (unsigned char *)s;
+    end  = (unsigned char *)s + len;
+    start = to = (unsigned char *) calloc(1, 3*len+1);
+    while (from < end)
+    {        
+        c = *from++;
+        if (c == ' ')
+        {
+            *to++ = '+';
+        }
+        else if ((c < '0' && c != '-' && c != '.') ||
+        (c < 'A' && c > '9') ||
+        (c > 'Z' && c < 'a' && c != '_') ||
+        (c > 'z'))
+        {
+            to[0] = '%';
+            to[1] = hexchars[c >> 4];
+            to[2] = hexchars[c & 15];
+            to += 3;
+        }
+        else
+        {
+            *to++ = c;
+        }
+    }
+    *to = 0;
+    return (char *) start;
+}
+
+int  TrafficUtils::httppost(CURL*curlHandler, const std::string &url,const std::string &postData, \
+    std::string &strRsp, bool headflag, int timeout)
+ {
+    int ret = 0;
+    CURLcode  code;
+
+    curl_easy_setopt(curlHandler, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curlHandler, CURLOPT_TIMEOUT, timeout);
+
+    curl_easy_setopt(curlHandler, CURLOPT_POSTFIELDS, postData.c_str());
+    curl_easy_setopt(curlHandler, CURLOPT_WRITEFUNCTION, &writeFunction);
+    curl_easy_setopt(curlHandler, CURLOPT_WRITEDATA, (void *)&strRsp);
+    curl_easy_setopt(curlHandler, CURLOPT_SSL_VERIFYPEER, 0);    
+    curl_easy_setopt(curlHandler, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_easy_setopt(curlHandler, CURLOPT_POST,1);    
+    curl_easy_setopt(curlHandler, CURLOPT_ENCODING,"gzip");
+
+    curl_slist *httpHeaders= NULL;
+    if (headflag)
+    {
+        TrafficUtils::setCurlOpt(&curlHandler, &httpHeaders);
+    }
+   
+    code = curl_easy_perform(curlHandler);    
+    if ( CURLE_OK != code )    
+    {        
+        TRAFFIC_LOG_INFO("curl_easy_perform error, rsp Code : %d\n", code);
+        ret = code;    
+    }    
+    else    
+    {        
+        long rspCode;        
+        curl_easy_getinfo(curlHandler, CURLINFO_RESPONSE_CODE, &rspCode);    
+    }
+
+    if (httpHeaders!= NULL)
+    {
+        curl_slist_free_all(httpHeaders); 
+    }
+
+    return ret;
+ }
+
+ int  TrafficUtils::httppostYunos(CURL*curlHandler, const std::string &url, const std::string &postData,  std::string &strRsp,  bool headflag)
+ {
+     int ret = 0;
+    CURLcode  code;
+
+    struct curl_httppost *post = NULL;
+    struct curl_httppost *last = NULL;
+
+    curl_formadd(&post, &last, CURLFORM_PTRNAME, "reqformat", CURLFORM_PTRCONTENTS, "plain", CURLFORM_END);
+    curl_formadd(&post, &last, CURLFORM_PTRNAME, "file", CURLFORM_PTRCONTENTS, postData.c_str(), CURLFORM_CONTENTSLENGTH, postData.length(), CURLFORM_END);
+    /*
+    curl_formadd(&post, &last,
+          CURLFORM_COPYNAME, "trackdata",
+          CURLFORM_BUFFER, "zippedgpstrack.data",
+          CURLFORM_BUFFERPTR, postData.c_str(),
+          CURLFORM_BUFFERLENGTH, postData.length(),
+          CURLFORM_END);
+    */
+    curl_easy_setopt(curlHandler, CURLOPT_HTTPPOST, post);
+    curl_easy_setopt(curlHandler, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curlHandler, CURLOPT_TIMEOUT, 2);
+
+    //curl_easy_setopt(curlHandler, CURLOPT_POSTFIELDS, postData.c_str());
+    curl_easy_setopt(curlHandler, CURLOPT_WRITEFUNCTION, &writeFunction);
+    curl_easy_setopt(curlHandler, CURLOPT_WRITEDATA, (void *)&strRsp);
+    //curl_easy_setopt(curlHandler, CURLOPT_SSL_VERIFYPEER, 0);    
+    //curl_easy_setopt(curlHandler, CURLOPT_SSL_VERIFYHOST, 0);
+    //curl_easy_setopt(curlHandler, CURLOPT_POST,1);    
+    //curl_easy_setopt(curlHandler, CURLOPT_ENCODING,"zip");
+
+    curl_slist *httpHeaders= NULL;
+    if (headflag)
+    {
+        TrafficUtils::setCurlOptYunos(&curlHandler, &httpHeaders, postData.length());
+    }
+   
+    code = curl_easy_perform(curlHandler);
+    if ( CURLE_OK != code )
+    {        
+        TRAFFIC_LOG_INFO("curl_easy_perform error, rsp Code : %d\n", code);
+        ret = code;    
+    }    
+    else    
+    {        
+        long rspCode;        
+        curl_easy_getinfo(curlHandler, CURLINFO_RESPONSE_CODE, &rspCode);    
+    }
+
+    if (httpHeaders!= NULL)
+    {
+        curl_slist_free_all(httpHeaders); 
+    }
+
+    return ret; 
+ }
+
+ int  TrafficUtils::httpsget(CURL*curlHandler, const std::string &url, std::string &strRsp, bool headflag)
+ {
+    int ret = 0;
+    CURLcode  code;
+
+    curl_easy_setopt(curlHandler, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curlHandler, CURLOPT_TIMEOUT, 2);
+
+    curl_easy_setopt(curlHandler, CURLOPT_VERBOSE, 1);
+    curl_easy_setopt(curlHandler, CURLOPT_WRITEFUNCTION, &writeFunction);
+    curl_easy_setopt(curlHandler, CURLOPT_WRITEDATA, (void *)&strRsp);
+    curl_easy_setopt(curlHandler, CURLOPT_SSL_VERIFYPEER, 0);    
+    curl_easy_setopt(curlHandler, CURLOPT_SSL_VERIFYHOST, 0);
+    //curl_easy_setopt(curlHandler, CURLOPT_HTTPGET, 1);
+    curl_easy_setopt(curlHandler, CURLOPT_ENCODING, "gzip");
+    curl_easy_setopt(curlHandler, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curlHandler, CURLOPT_FORBID_REUSE, 1);
+
+    curl_slist *httpHeaders= NULL;
+
+    if (headflag)
+    {
+        TrafficUtils::setCurlOpt(&curlHandler, &httpHeaders);
+    }
+
+    //TRAFFIC_LOG_INFO("starting call curl_easy_perform()....\n");
+    code = curl_easy_perform(curlHandler);    
+    if ( CURLE_OK != code )    
+    {        
+        TRAFFIC_LOG_ERROR("curl_easy_perform error, rsp Code : %d\n", code);
+        ret = code;    
+    }    
+    else    
+    {      
+        //TRAFFIC_LOG_INFO("curl_easy_perform success.\n");  
+        long rspCode;        
+        curl_easy_getinfo(curlHandler, CURLINFO_RESPONSE_CODE, &rspCode);    
+    }
+
+    if (httpHeaders!= NULL)
+    {
+        curl_slist_free_all(httpHeaders); 
+    }
+
+    return ret;
+ }
+
+void TrafficUtils::setCurlOpt(CURL**curlHandler, curl_slist**httpHeaders)
+{
+    if ( *curlHandler == NULL ) return;
+    curl_easy_setopt(*curlHandler, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(*curlHandler, CURLOPT_TIMEOUT, 2);
+
+    if ( *httpHeaders == NULL )
+    {
+        *httpHeaders = curl_slist_append(*httpHeaders, "Accept: */*");
+        *httpHeaders = curl_slist_append(*httpHeaders, "Content-Type: application/json");
+        *httpHeaders = curl_slist_append(*httpHeaders, "charsets: utf-8");
+        *httpHeaders = curl_slist_append(*httpHeaders, "Connection: Keep-Alive");
+        *httpHeaders = curl_slist_append(*httpHeaders, "Accept-Encoding: gzip");
+        *httpHeaders = curl_slist_append(*httpHeaders, "Response-type: application/octet-stream");
+    }
+    
+    curl_easy_setopt(*curlHandler, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_easy_setopt(*curlHandler, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_easy_setopt(*curlHandler, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_easy_setopt(*curlHandler, CURLOPT_ENCODING, "gzip");
+    curl_easy_setopt(*curlHandler, CURLOPT_HTTPHEADER, *httpHeaders);
+}
+
+void  TrafficUtils::setCurlOptYunos(CURL**curlHandler, curl_slist**httpHeaders, int dataLens)
+{
+    char szHeader[128];
+    snprintf(szHeader, sizeof(szHeader), "Content-Length: %d", dataLens);
+    if ( *curlHandler == NULL ) return;
+    curl_easy_setopt(*curlHandler, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(*curlHandler, CURLOPT_TIMEOUT, 2);
+
+    if ( *httpHeaders == NULL )
+    {
+        //*httpHeaders = curl_slist_append(*httpHeaders, "Accept: */*");
+        *httpHeaders = curl_slist_append(*httpHeaders, "Content-Type: multipart/form-data");
+        //*httpHeaders = curl_slist_append(*httpHeaders, "charsets: utf-8");
+        //*httpHeaders = curl_slist_append(*httpHeaders, "Connection: Keep-Alive");
+        //*httpHeaders = curl_slist_append(*httpHeaders, "Accept-Encoding: gzip");
+        //*httpHeaders = curl_slist_append(*httpHeaders, "Response-type: application/octet-stream");
+        //*httpHeaders = curl_slist_append(*httpHeaders, szHeader);
+    }
+    
+    curl_easy_setopt(*curlHandler, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_easy_setopt(*curlHandler, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_easy_setopt(*curlHandler, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_easy_setopt(*curlHandler, CURLOPT_ENCODING, "zip");
+    curl_easy_setopt(*curlHandler, CURLOPT_HTTPHEADER, *httpHeaders);  
+}
+ 
+
+std::string  TrafficUtils::getMD5String(const std::string &app, const std::string &appkey, const std::string&appsecert,std::string &timestamp)
+{
+    time_t timep;
+    time(&timep);
+    char buff[20]={0};
+    snprintf(buff, 20,"%ld",timep);
+    timestamp=std::string(buff);
+
+    std::string rawData="app="+app+"&appkey="+appkey+"&timestamp="+timestamp+appsecert;
+
+    // 调用md5哈希    
+    unsigned char mdStr[33] = {0};  
+    MD5((const unsigned char *)rawData.c_str(), rawData.length(), mdStr);  
+  
+    // 哈希后的字符串    
+    std::string encodedStr = std::string((const char *)mdStr);  
+
+    // 哈希后的十六进制串 32字节  
+
+    std::string encodedHexStr = GetHexString(mdStr, 32, 32);  
+
+    return encodedHexStr;
+}
+
+
+std::string  TrafficUtils::getMD5StringV2(const std::string &app, 
+                                          const std::string &appkey,
+                                          const std::string&appsecert,
+                                          std::string &timestamp,
+                                          const Json::Value &reqJson)
+{
+
+    // 解析出reqjson 的 key-value
+    int retCode = 0;
+    Json::Value value;
+    Json::Reader reader;
+
+
+    std::vector< PostField > user_post_fields;
+    
+    Json::Value::Members members = reqJson.getMemberNames();
+    for (auto it = members.begin(); it !=members.end();++it)
+    {
+        stringstream tempValue;
+        if ( reqJson[*it].isString() )
+        {
+            tempValue<<reqJson[*it].asString();
+        }
+        else if (reqJson[*it].isInt())
+        {  
+            tempValue<<reqJson[*it].asInt();
+        }
+        else if (reqJson[*it].isBool())
+        {
+            if (reqJson[*it].asBool())
+            {
+                tempValue<<"true";
+            }
+            else
+            {
+               tempValue<<"false";
+            }
+          
+        }
+        else
+        {
+          tempValue<<reqJson[*it].toStyledString();
+        }
+
+        PostField field(*it, tempValue.str());
+        user_post_fields.push_back(field);
+  }
+   
+    sort(user_post_fields.begin(), user_post_fields.end());
+
+
+    time_t timep;
+    time(&timep);
+    char buff[20]={0};
+    snprintf(buff, 20,"%ld",timep);
+    timestamp=std::string(buff);
+
+
+    stringstream ss;
+
+    ss<<"app="<<app<<"&appkey="<<appkey<<"&timestamp="<<timestamp<<"&";
+
+    int size = user_post_fields.size();
+    for( int index = 0; index <size-1; index++ )
+    {
+        ss<<user_post_fields[index].field_name<<"="<<user_post_fields[index].field_value<<"&";
+    }
+
+    ss<<user_post_fields[size-1].field_name<<"="<<user_post_fields[size-1].field_value;
+    ss<<appsecert;
+
+    std::string rawData=ss.str();
+
+
+    // 调用md5哈希    
+    unsigned char mdStr[33] = {0};  
+    MD5((const unsigned char *)rawData.c_str(), rawData.length(), mdStr);  
+  
+    // 哈希后的字符串    
+    std::string encodedStr = std::string((const char *)mdStr);  
+
+    // 哈希后的十六进制串 32字节  
+
+    std::string encodedHexStr = GetHexString(mdStr, 32, 32);
+
+    TRAFFIC_LOG_DEBUG("Md5 rawdata:%s", rawData.c_str());
+    TRAFFIC_LOG_DEBUG("V2 sign:%s", encodedHexStr.c_str());
+
+    return encodedHexStr;
+}
+
+
+int  TrafficUtils::addSLSFormatLog(const std::string &module, const std::string &message,const std::string &req_id )
+{
+    TRAFFIC_LOG_INFO("%d|%d|%d|%s|%s|%d|%s|%s|%s|%s|%s|%s\n",LOGTYPE_INTERNAL, 0, 0, module.c_str()/*uuid*/,"NA", 0, "NA", "NA","NA","NA", message.c_str(),req_id.c_str());
+    return 0;
+
+}
+
+int TrafficUtils::json_ReadInt(Json::Value JV, int ori_value)
+{
+    int result = ori_value;
+    Json::ValueType VT = JV.type();
+    if (VT == Json::ValueType::intValue)
+      result = JV.asInt();
+    return result;
+}
+
+bool TrafficUtils::checkUUID(const Json::Value& value) {
+    if (value["UUID"].isNull() || !value["UUID"].isString())
+        return false;
+    return true;
+}
+
+bool TrafficUtils::checkVIN(const Json::Value& value) {
+    bool result = false;
+    if (!value["VIN"].isNull() && value["VIN"].isString())
+        result = true;
+    if (!value["vin"].isNull() && value["vin"].isString())
+        result = true;
+    return result;
+}
+
+bool TrafficUtils::checkUUIDandVin(const Json::Value& value) {
+    if (value["UUID"].isNull() || !value["UUID"].isString())
+        return false;
+    if (value["VIN"].isNull() || !value["VIN"].isString())
+        return false;
+    return true;
+}
+
+double TrafficUtils::json_ReadDouble(Json::Value JV, double ori_value)
+{
+    double result = ori_value;
+    Json::ValueType VT = JV.type();
+    if (VT == Json::ValueType::realValue)
+      result = JV.asDouble();
+    return result;
+}
+
+std::string TrafficUtils::json_ReadString(Json::Value JV, std::string ori_value)
+{
+    std::string result = ori_value;
+    Json::ValueType VT = JV.type();
+    if (VT == Json::ValueType::stringValue)
+      result = JV.asCString();
+    return result;
+}
+
+bool TrafficUtils::json_ReadBool(Json::Value JV, bool ori_value)
+{
+    bool result = ori_value;
+    Json::ValueType VT = JV.type();
+    if (VT == Json::ValueType::booleanValue)
+      result = JV.asBool();
+    return result;
+}
+
+bool TrafficUtils::is_digits(const std::string &str)
+{
+    return str.find_first_not_of("0123456789") == std::string::npos;
+}
+
+
+//调用Amap接口查询当前位置所在的城市adcode
+std::string TrafficUtils::getAdCodeByAmapReCode(const std::string &point,const std::string & amap_geo_url, const std::string &amap_geo_key)
+{
+    std::string adcode="";
+
+
+    // 查询amap 的regeo接口
+    std::vector < PostField >  user_post_fields;
+
+    PostField field_key(std::string("key"), amap_geo_key );
+    user_post_fields.push_back(field_key); 
+
+    PostField field_locations(std::string("location"), point );
+    user_post_fields.push_back(field_locations);
+    
+    PostField field_radius(std::string("radius"), std::to_string(100) );
+    user_post_fields.push_back(field_radius);
+    
+    PostField field_batch(std::string("batch"), std::string("false") );
+    user_post_fields.push_back(field_batch);
+
+    
+    stringstream ss;
+
+    for (auto &field: user_post_fields)
+    {
+        ss<<field.field_name;
+        ss<<"=";
+        char *value = TrafficUtils::url_encode(field.field_value.c_str(), field.field_value.size());
+        ss<<value;
+        ss<<"&"; 
+        free(value);
+    }
+
+
+    std::string paramsData = ss.str();
+    std::string strRspJson;
+    std::string strRequestUrl = amap_geo_url + paramsData;
+
+
+    CURL *curlHandler =curl_easy_init();
+    if(NULL != curlHandler)
+    {
+        int ret =TrafficUtils::httpsget(curlHandler,  strRequestUrl, strRspJson);
+        curl_easy_cleanup(curlHandler);
+
+        if(0 != ret)
+        {
+            TRAFFIC_LOG_ERROR("Amap ReGeo failed");
+            return adcode;
+        }
+        else 
+        {
+            TRAFFIC_LOG_INFO("Amap ReGeo result:%s", strRspJson.c_str());
+        } 
+    }
+
+    //返回数据中抽取adcode
+    cJSON *json_root = NULL;
+    json_root = cJSON_Parse(strRspJson.c_str());
+    if ( NULL == json_root ) 
+    {
+        TRAFFIC_LOG_WARN("%d\t Error before: [%s]\n", LOGTYPE_EXTERNAL, cJSON_GetErrorPtr());
+        cJSON_Delete(json_root);
+ 
+        return adcode;
+    }
+    cJSON* item = cJSON_GetObjectItem(json_root, "status");
+    if ((item != NULL) && (item->type == cJSON_String))
+    {
+        std::string status = item->valuestring;
+        if (status !="1")
+        {
+            TRAFFIC_LOG_INFO("Amap Regeo response status is not 1");
+            cJSON_Delete(json_root);
+            return adcode;
+        }
+    }
+
+    cJSON* regeocode =  cJSON_GetObjectItem(json_root, "regeocode");
+
+    if ( regeocode != NULL )
+    {
+         cJSON* addressComponent =  cJSON_GetObjectItem(regeocode, "addressComponent");
+         if ( addressComponent!= NULL )
+         {
+            item = cJSON_GetObjectItem(addressComponent, "adcode");
+            if (item != NULL && item->type == cJSON_String)
+            {
+                adcode = item->valuestring;
+                stringstream ss;
+                ss<<adcode[0];
+                ss<<adcode[1];
+                ss<<"0000";
+
+                adcode = ss.str();
+            }
+         }
+    }
+    cJSON_Delete(json_root);
+
+    return adcode;
+}
+
+std::string TrafficUtils::getAdCodeByAmapReCode(int32_t lon, int32_t lat,const std::string & amap_geo_url, const std::string &amap_geo_key)
+{
+
+    stringstream ss;
+    double lon_f = (lon*1.0)/1E7;
+    double lat_f = (lat*1.0)/1E7;
+
+    ss.precision(7);
+    ss<<lon_f<<","<<lat_f;
+
+    return getAdCodeByAmapReCode(ss.str(), amap_geo_url, amap_geo_key);
+
+}
+
+std::string TrafficUtils::getAdCodeByAmapReCode(double lon, double lat,const std::string & amap_geo_url, const std::string &amap_geo_key)
+{
+    stringstream ss;
+  
+    ss.precision(7);
+    ss<<lon<<","<<lat;
+    return getAdCodeByAmapReCode(ss.str(), amap_geo_url, amap_geo_key);
+}
+
+//通过CMNS  推送消息指定uuid的车机
+int TrafficUtils::sendMsgByCmns( const std::string &data, 
+                                 int eventtype, 
+                                 const std::string &targetuuid,
+                                 const std::string &appkey,
+                                 const std::string &appsecret,
+                                 const std::string &url)
+{
+
+    Json::FastWriter writer;
+    Json::Value root, reqJson;
+    std::string appname = "ZEBRA_HSF";
+    std::string timestamp;
+    root["sign"]         = TrafficUtils::getMD5String(appname, appkey, appsecret, timestamp);
+    root["timestamp"]    = timestamp;
+    root["app"]          = appname;
+    root["appkey"]       = appkey;
+    reqJson["UUID"]      = targetuuid;
+    reqJson["VIN"]       = "HSF_VIN";
+    reqJson["cv"]        = "1.0.0";
+    reqJson["eventtype"] = eventtype;
+    reqJson["data"]      = TrafficUtils::base64Encode(data);
+    root["reqJson"]      = reqJson;
+    std::string postData=writer.write(root);
+
+     CURL *curlHandler =curl_easy_init();
+    if ( NULL == curlHandler )
+    {
+        return -1 ;
+    }
+
+    std::string strRspJson;
+    int ret =TrafficUtils::httppost(curlHandler, url, postData, strRspJson, true);
+
+    curl_easy_cleanup(curlHandler);
+
+    return ret ;
+
+}
+
+
+int TrafficUtils::sendRequestLbsZebra( const Json::Value &reqJson, 
+                                       const std::string &appkey,
+                                       const std::string &appsecret,
+                                       const std::string &url,
+                                       bool isV2Sign,
+                                       std::string &resultData)
+{
+
+    Json::FastWriter writer;
+    Json::Value root;
+    std::string appname = "ZEBRA_HSF";
+    std::string timestamp;
+    root["reqJson"]      = reqJson;
+
+    if (isV2Sign)
+    {
+      root["sign"]         = TrafficUtils::getMD5StringV2(appname, appkey, appsecret, timestamp,reqJson);
+    }
+    else
+    {
+       root["sign"]         = TrafficUtils::getMD5String(appname, appkey, appsecret, timestamp);
+    }
+    root["timestamp"]    = timestamp;
+    root["app"]          = appname;
+    root["appkey"]       = appkey;
+    std::string postData=writer.write(root);
+
+     CURL *curlHandler =curl_easy_init();
+    if ( NULL == curlHandler )
+    {
+        return -1 ;
+    }
+
+    int ret =TrafficUtils::httppost(curlHandler, url, postData, resultData, true);
+
+    curl_easy_cleanup(curlHandler);
+
+    return ret ;
+
+}
+
+
+std::string TrafficUtils::getMD5SignBanMa(std::vector<PostField>&user_post_fields, const std::string &appsecret)
+{
+    sort(user_post_fields.begin(), user_post_fields.end());
+
+    stringstream ss;
+    ss<<appsecret;
+
+    for(auto &field:user_post_fields)
+    {
+        ss<<field.field_name;
+        ss<<field.field_value;
+    }
+
+    ss<<appsecret; 
+    
+    std::string rawData = ss.str();
+
+    unsigned char mdStr[33] = {0};
+    MD5((const unsigned char *)rawData.c_str(), rawData.length(), mdStr);
+
+    std::string encodedStr = std::string((const char *)mdStr); 
+
+    char buf[65] = {0};
+    char tmp[3] = {0};
+    for (int i = 0; i < 32; i++)
+    {          
+        sprintf(tmp, "%02x", mdStr[i]);
+        strncat(buf, tmp, 2);
+    }
+    buf[32] = '\0';
+    std::string encodedHexStr = std::string(buf);
+    return encodedHexStr;
+}
+
+
+std::string TrafficUtils::makePostDataBanMa(std::vector<PostField>&user_post_fields, 
+                                            const std::string &method,
+                                            const std::string &appKey, 
+                                            const std::string &appsecret)
+{
+    //timestamp
+    std::string format = "%Y-%m-%d %H:%M:%S";
+    std::string timestamp=TrafficUtils::getTimeStamp(format);
+
+
+    PostField field_timestamp(std::string("timestamp"), timestamp );
+    user_post_fields.push_back(field_timestamp);
+    
+    PostField field_method(std::string("method"), method );
+    user_post_fields.push_back(field_method);
+    
+    PostField field_appKey(std::string("appKey"), appKey );
+    user_post_fields.push_back(field_appKey);
+    
+     //get sign
+    std::string sign = getMD5SignBanMa(user_post_fields, appsecret);
+
+    PostField field_sign(std::string("sign"), sign);
+    user_post_fields.push_back(field_sign);
+
+    stringstream ss;
+
+    for (auto &field: user_post_fields)
+    {
+        ss<<field.field_name;
+        ss<<"=";
+        char *value = TrafficUtils::url_encode(field.field_value.c_str(), field.field_value.size());
+        ss<<value;
+        ss<<"&"; 
+        free(value);
+    }
+
+    TRAFFIC_LOG_DEBUG("post Data:%s\n",ss.str().c_str());
+    return ss.str();
+
+}
+
+
+int TrafficUtils::hmacEncode(const std::string &algo,
+                             const std::string &key,
+                             const std::string &input,
+                              unsigned char * &output, unsigned int &output_length)
+{
+        const EVP_MD * engine = NULL;
+        if( algo=="sha512" ) 
+        {
+                engine = EVP_sha512();
+        }
+        else if( algo == "sha256" ) 
+        {
+                engine = EVP_sha256();
+        }
+        else if( algo == "sha1" ) 
+        {
+                engine = EVP_sha1();
+        }
+        else if( algo == "md5" ) 
+        {
+                engine = EVP_md5();
+        }
+        else if( algo=="sha224" ) 
+        {
+                engine = EVP_sha224();
+        }
+        else if( algo == "sha384" ) 
+        {
+                engine = EVP_sha384();
+        }
+        else if( algo == "sha" )
+        {
+                engine = EVP_sha();
+        }
+        else if( algo == "md2" ) 
+        {
+                engine = EVP_md2();
+        }
+        else 
+        {
+                std::cout << "Algorithm " << algo << " is not supported by this program!" << endl;
+                return -1;
+        }
+ 
+        output = (unsigned char*)malloc(EVP_MAX_MD_SIZE);
+ 
+        HMAC_CTX ctx;
+        HMAC_CTX_init(&ctx);
+        HMAC_Init_ex(&ctx, key.c_str(), key.length(), engine, NULL);
+        HMAC_Update(&ctx, (unsigned char*)input.c_str(), input.length());        // input is OK; &input is WRONG !!!
+ 
+        HMAC_Final(&ctx, output, &output_length);
+        HMAC_CTX_cleanup(&ctx);
+
+   
+        return 0;
+}
+
+int TrafficUtils::sendBanmaOPSAPI(const std::string &method,
+                            const std::string &banma_appkey,
+                            const std::string &banma_appsecret,
+                            std::vector < PostField > &user_post_fields,
+                            std::string &responseStr, int host_env)
+{
+    TRAFFIC_LOG_DEBUG("sendBanmaOPSAPI, host_env=%d, banma_url=%s", host_env, BANMA_URL[host_env].c_str());
+    if (host_env!=1 && host_env!=2 )
+    {
+      return -1;
+    }
+    int ret = 0;
+
+
+    std::cout<<"method:"<<method<<std::endl;
+    std::cout<<"banma_appkey:"<<banma_appkey<<std::endl;
+    std::cout<<"banma_appsecret:"<<banma_appsecret<<std::endl;
+    std::cout<<"banma_url:"<<BANMA_URL[host_env]<<std::endl;
+    for (int i = 0; i < user_post_fields.size();i++)
+    {
+      std::cout<<user_post_fields[i].field_name<<":"<<user_post_fields[i].field_value<<std::endl;
+    }
+
+    std::string postData    = makePostDataBanMa( user_post_fields, method, banma_appkey, banma_appsecret );
+
+
+    CURL*curlHandler =curl_easy_init();
+    ret =TrafficUtils::httppost(curlHandler,  BANMA_URL[host_env],  postData,  responseStr);
+    curl_easy_cleanup(curlHandler);
+
+    return ret;
+}
+
+int TrafficUtils::physicalToLogicLevel(int physicalLevel){
+    int num = sizeof(s_phyToLogicTable) / sizeof(s_phyToLogicTable[0]);
+    for (int index = 0; index < num; ++index) {
+        if (s_phyToLogicTable[index][0] == physicalLevel) {
+            return s_phyToLogicTable[index][1];
+        }
+    }
+    // verify(0);
+    return 0;
+}
+
+double TrafficUtils::resolution(int logicLevel){
+    // verify(logicLevel <= detailestLogicLevel);
+    return pow(2, detailestLogicLevel - logicLevel);
+}
+
+bool TrafficUtils::physicalGridCfg(int physicalLevel, GridCfgInfo& gridCfg){
+    // unit = 3600    
+    gridCfg.level = physicalLevel;
+    gridCfg.gridHeight = level17TileWidth * unit;   // unit: second
+    gridCfg.gridWidth = level17TileWidth * unit;   // unit: second
+
+    gridCfg.minXOfArea = -180 * unit;
+    gridCfg.maxXOfArea = 180 * unit;
+    gridCfg.minYOfArea = -90 * unit;
+    gridCfg.maxYOfArea = 90 * unit;
+
+    int logicLevel = physicalToLogicLevel(physicalLevel);
+    gridCfg.reslution = resolution(logicLevel);
+    gridCfg.gridHeight *= gridCfg.reslution;
+    gridCfg.gridWidth  *= gridCfg.reslution;
+    return true;
+}
+
+bool TrafficUtils::GetTileLB(uint32_t tilex, uint32_t tiley, const GridCfgInfo& gridCfg, LonLat& pt){
+    pt.lon = tilex * gridCfg.gridWidth + gridCfg.minXOfArea;
+    pt.lat = tiley * gridCfg.gridHeight + gridCfg.minYOfArea;
+    pt.lon /= 3600; pt.lat /= 3600;
+    return true;
+}
+
+bool TrafficUtils::GetTileRect(uint32_t physicalLevel, uint32_t col, uint32_t row, Rect& rect){
+    GridCfgInfo gridCfg;
+    physicalGridCfg(physicalLevel, gridCfg);
+    LonLat pt;
+    pt.lon = 0;
+    pt.lat = 0;
+    GetTileLB(col, row, gridCfg, pt);
+    rect.x_min = pt.lon;
+    rect.y_min = pt.lat;
+    GetTileLB(col+1, row+1, gridCfg, pt);
+    rect.x_max = pt.lon;
+    rect.y_max = pt.lat;
+    return true;
+}
+
+bool TrafficUtils::logicLevelToPhysical(int logicLevel, int& physicalLevel) {
+    int i = 0;
+    int array_len = sizeof(s_mapTileInfo) / sizeof(s_mapTileInfo[0]);
+    for (; i < array_len; ++i)
+    {
+        if (s_mapTileInfo[i].logicLevelIdMin <= logicLevel && logicLevel <= s_mapTileInfo[i].logicLevelIdMax)
+        {
+            physicalLevel = s_mapTileInfo[i].psfLevelId;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TrafficUtils::GetTileIdRect(uint64 logitileid64_src, Rect& rect) {
+    if (logitileid64_src == 0)
+        return false;
+    uint8_t src_logi_layer = (logitileid64_src >> 32) & 0x00FF;
+    uint32_t col = (logitileid64_src >> 16) & 0x00FFFF;
+    uint32_t row = (logitileid64_src ) & 0x00FFFF;
+    int physicalLevel = 0;
+    if (!logicLevelToPhysical(src_logi_layer, physicalLevel))
+        return false;
+    GridCfgInfo gridCfg;
+    physicalGridCfg(physicalLevel, gridCfg);
+    LonLat pt;
+    pt.lon = 0;
+    pt.lat = 0;
+    GetTileLB(col, row, gridCfg, pt);
+    rect.x_min = pt.lon;
+    rect.y_min = pt.lat;
+    GetTileLB(col+1, row+1, gridCfg, pt);
+    rect.x_max = pt.lon;
+    rect.y_max = pt.lat;
+    return true;
+}
+
+static const std::string base64_chars =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz"
+"0123456789+/";
+ 
+ 
+inline bool TrafficUtils::isBase64(unsigned char c)
+{
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
+ 
+std::string TrafficUtils::base64Encode_(unsigned char const* bytes_to_encode, unsigned int in_len)
+{
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
+    std::string ret;
+ 
+    while (in_len--)
+    {
+        char_array_3[i++] = *(bytes_to_encode++);
+        if (i == 3)
+        {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+ 
+            for (i = 0; (i <4); i++)
+                ret += base64_chars[char_array_4[i]];
+            i = 0;
+        }
+    }
+ 
+    if (i)
+    {
+        for (j = i; j < 3; j++)
+            char_array_3[j] = '\0';
+ 
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+ 
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars[char_array_4[j]];
+ 
+        while ((i++ < 3))
+            ret += '=';
+ 
+    }
+ 
+    return ret;
+ 
+}
+ 
+std::string TrafficUtils::base64Decode_(const std::string& encoded_string)
+{
+    int in_len = encoded_string.size();
+    int i = 0;
+    int j = 0;
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
+    std::string ret;
+ 
+    while (in_len-- && (encoded_string[in_] != '=') && isBase64(encoded_string[in_]))
+    {
+        char_array_4[i++] = encoded_string[in_]; in_++;
+        if (i == 4) {
+            for (i = 0; i <4; i++)
+                char_array_4[i] = base64_chars.find(char_array_4[i]);
+ 
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+ 
+            for (i = 0; (i < 3); i++)
+                ret += char_array_3[i];
+            i = 0;
+        }
+    }
+ 
+    if (i)
+    {
+        for (j = i; j <4; j++)
+            char_array_4[j] = 0;
+ 
+        for (j = 0; j <4; j++)
+            char_array_4[j] = base64_chars.find(char_array_4[j]);
+ 
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+ 
+        for (j = 0; (j < i - 1); j++) ret += char_array_3[j];
+    }
+ 
+    return ret;
+}
+ 
+std::string TrafficUtils::base64Encode(const std::string& s)
+{
+    return base64Encode_(reinterpret_cast<const unsigned char*>(s.c_str()), s.length());
+}
+ 
+std::string TrafficUtils::base64Decode(const std::string& s)
+{
+    return base64Decode_(s);
+}
+
+std::string TrafficUtils::GetHexString(const unsigned char* srcBuf, int srcLen, int outLens)
+{
+    if ( (srcBuf == NULL) || (srcLen <= 0) )
+    {
+        return std::string("");
+    }
+
+    int bufSize = 2 * srcLen + 1;    
+    char *pDstBuf = new char[bufSize];    
+    memset(pDstBuf, 0, bufSize);
+
+    for (int i = 0; i < srcLen; i++)
+    {
+        int nExistLen = strnlen(pDstBuf, bufSize-1);
+        snprintf(pDstBuf + nExistLen, bufSize-nExistLen, "%02x", srcBuf[i]);
+    }
+
+    std::string encodedHexStr;
+    if( (outLens >= 1) && (outLens < bufSize) )
+    {
+        pDstBuf[outLens] = '\0';
+    }
+    encodedHexStr = std::string(pDstBuf);
+
+    delete []pDstBuf;
+    return encodedHexStr;
+}
+
+
+int  TrafficUtils::boostGzip(const std::string &unGzipData,std::string &gzipStr)
+{
+    try
+    {
+        boost::iostreams::filtering_ostream os;
+        os.push(boost::iostreams::gzip_compressor());
+        os.push(boost::iostreams::back_inserter(gzipStr));
+        os <<unGzipData;
+        os.reset();
+    }
+    catch(std::exception& e)
+    {
+        TRAFFIC_LOG_ERROR("boostUnGzip error:%s",e.what());
+        return -1;
+    }
+
+    return 0;
+}
+
+int TrafficUtils::boostUnGzip(const std::string &gzipData,std::string &unGzipStr)
+{
+    try
+    {
+        std::stringstream ssUnZip(gzipData);
+        std::stringstream ss_decomp;
+        boost::iostreams::filtering_istream in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(ssUnZip);
+        boost::iostreams::copy(in, ss_decomp);
+        unGzipStr = ss_decomp.str();
+
+    }
+    catch(std::exception& e)
+    {
+        TRAFFIC_LOG_ERROR("boostUnGzip error:%s",e.what());
+        return -1;
+    }
+
+    return 0;
+}
+
+} //namespace BlueHou
+
+#ifndef COMMON_DEF_H_
+#define COMMON_DEF_H_
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <iostream>
+#include <string.h>
+#include <map>
+#include <vector>
+
+//#define _TLOG_
+
+#ifdef _TLOG_
+#include "tlog/tlog.h"
+#endif
+
+namespace BuleHou {
+
+//typedef void (*PF_HANDLE_MSG)(void * arg, const std::string & data);
+#define MAX_RECVMSG_QUE_SIZE (365)
+#define RAW_MESH_MOD_NUM (16)
+#define MGET_MAX_NUM (100)
+
+#ifdef _TLOG_
+    #define TRAFFIC_LOG TLog::trf_log_info
+    #define TRAFFIC_LOG_DEBUG TLog::trf_log_debug
+    #define TRAFFIC_LOG_INFO TLog::trf_log_info
+    #define TRAFFIC_LOG_WARN TLog::trf_log_warn
+    #define TRAFFIC_LOG_ERROR TLog::trf_log_error
+    #define TRAFFIC_LOG_FATAL TLog::trf_log_fatal
+    #define TRAFFIC_LOG_INFO_TIMEOUT TLog::trf_log_info_timeout
+    #define TRAFFIC_LOG_ERROR_TIMEOUT TLog::trf_log_error_timeout
+#else
+    #define TRAFFIC_LOG printf
+    #define TRAFFIC_LOG_DEBUG printf
+    #define TRAFFIC_LOG_INFO printf
+    #define TRAFFIC_LOG_WARN printf
+    #define TRAFFIC_LOG_ERROR printf
+    #define TRAFFIC_LOG_FATAL printf
+    #define TRAFFIC_LOG_INFO_TIMEOUT printf
+    #define TRAFFIC_LOG_ERROR_TIMEOUT printf
+    
+#endif
+
+#define MAX_TAIR_VALUE_SIZE (1048576)	// 512*1024
+
+#define ZLIB_BUF_MAX_SIZE (1024*1024*1024)
+#define ZLIB_GZ_BUF_MAX_SIZE (1024*1024*100)
+
+#define MAX_BINARY_FILE_SIZE (1024*1024*100)
+
+#define RENDER_OVERLAP_TABLE_KEY "render_overlap_table"
+#define GD_MESH_OVERLAP_TABLE_KEY "gaodemesh_overlap_table"
+#define GD_MESH_ADCODE_TALBE_KEY   "meshid_adcode_table"
+
+#define MIN_LOGICAL_LEVEL (4)
+#define MAX_LOGICAL_LEVEL (20)
+
+#define CONST_VTIME (60)	// 180 seconds
+#define CONST_VTIME_GEOM (120)// TODO 120
+#define random_for_vtime(x) (rand()%x)
+// TODO 0803
+//#define RAMDOM_FOR_VTIME random_for_vtime(3)
+#define RAMDOM_FOR_VTIME (0)
+
+#define TIMEOUT1_REQUEST (50)	//ms
+#define TIMEOUT2_REQUEST (100)	//ms
+#define TIMEOUT3_REQUEST (150)	//ms
+#define TIMEOUT4_REQUEST (200)	//ms
+#define TIMEOUT5_REQUEST (300)	//ms
+#define TIMEOUT6_REQUEST (400)	//ms
+
+
+/* key: "levelid_map_mesh", value: map<citycode, citycode> */
+typedef std::map<uint32_t, uint32_t> T_CITYCODE_MAP;
+typedef std::map< std::string, T_CITYCODE_MAP > T_OVERLAP_MAP_LVL_MESH_MAP;
+
+/* for GetJamStatus*/
+typedef std::map<uint64_t, std::vector<std::string>> T_RENDER_TILE_FILTER_MAP;
+
+//Redis DB define
+static const char* TRAFFIC_DATA_SERVER_KEY_CITIES_IDS                  = "CITIES_IDS";
+static const char* TRAFFIC_DATA_SERVER_MAP_TMC_DB                      = "ONLINE_MAP_TMC_DB";
+static const char* TRAFFIC_DATA_SERVER_ROUTE_TMC_DB                    = "ONLINE_ROUTE_TMC_DB";
+static const char* TRAFFIC_DATA_SERVER_ROUTE_UNI_TMC_DB                = "ONLINE_ROUTE_UNI_TMC_DB";
+static const char* TRAFFIC_DATA_SERVER_KEI_PREFIX_ROUTE_UNI_CITIES_IDS = "ROUTE_UNI_CITY_ID_";
+static const char* TRAFFIC_DATA_SERVER_KEI_PREFIX_ROUTE_CITIES_IDS     = "ROUTE_CITY_ID_";
+
+static const char* TRAFFIC_DATA_SERVER_INTER_SPLIT_FLAG   = "_";
+static const char* TRAFFIC_DATA_SERVER_ELEMENT_SPLIT_FLAG = ";";
+
+//traffic error code define
+static const int TRAFFIC_ERROR_NO_ERROR                   = 0;
+static const int TRAFFIC_ERROR_ALREADY_INIT                = 1300;
+static const int TRAFFIC_ERROR_MEMORY_ALLOC_FAILED         = 1301;
+static const int TRAFFIC_ERROR_OPEN_CONFIG_FAILED          = 1302;
+static const int TRAFFIC_ERROR_CONFIG_FILE_FORMAT          = 1303;
+static const int TRAFFIC_ERROR_REQUEST_PARAMETER           = 1304;
+static const int TRAFFIC_ERROR_NO_TRAFFIC_CITY             = 1305;
+static const int TRAFFIC_ERROR_NO_ONLINE_DB                = 1306;
+static const int TRAFFIC_ERROR_UNKNOWN_CV                  = 1307;
+static const int TRAFFIC_ERROR_MEMORY_NEW_FAIL_OR_INTERNAL = 1308;
+static const int TRAFFIC_ERROR_UNKNOWN_LOGICAL_LEVEL       = 1309;
+static const int TRAFFIC_ERROR_PARTIAL_SUCCESS             = 1340;
+static const int TRAFFIC_ERROR_KEYCENTER_FAILED            = 1350;
+
+//data server error
+static const int TRAFFIC_ERROR_DATA_SERVER_CONNECT_SERVER_FAILED  = 1320;
+static const int TRAFFIC_ERROR_DATA_SERVER_PASSWORD_ERROR         = 1321;
+static const int TRAFFIC_ERROR_DATA_SERVER_GET_DV_ERROR           = 1322;
+static const int TRAFFIC_ERROR_DATA_SERVER_GET_ERROR              = 1323;
+static const int TRAFFIC_ERROR_DATA_SERVER_COSMO_ERROR            = 1324;
+
+static const int TRAFFIC_ERROR_PARAMETER_LOSE       = 1500; //参数缺失
+static const int TRAFFIC_ERROR_PARAMETER_ILLEGAL    = 1501; //参数非法
+static const int TRAFFIC_ERROR_SYSTEM_OTHER         = 1502; //系统错误
+static const int TRAFFIC_ERROR_NO_DATA              = 1503; //返回数据空
+static const int TRAFFIC_ERROR_PARTIAL_SUCCESS2     = 1504; //部分成功
+static const int TRAFFIC_ERROR_JSON_ERROR           = 1600; //parse JSON 错误
+static const int TRAFFIC_ERROR_PGSQL_ERROR          = 1700; //PGSQL的错误
+
+
+
+
+
+static const int TRAFFIC_RESPONSE_HEADER_LENGTH = 4;
+static const int TRAFFIC_RESPONSE_ERROR_CODE_LENGTH = 4;
+
+//json para def
+static const int TRAFFIC_REQUEST_SOURCE_TYPE_ROUTE_UNI = 1;
+static const int TRAFFIC_REQUEST_SOURCE_TYPE_ROUTE     = 2;
+
+
+enum LOGTYPE
+{
+    LOGTYPE_REQUEST=0,
+    LOGTYPE_INTERNAL,
+    LOGTYPE_EXTERNAL,
+    LOGTYPE_THIRDPARTY,
+    LOGTYPE_SYS
+};
+
+struct LonLat
+{
+    double lon;
+    double lat;
+};
+
+struct Point_int32
+{
+    Point_int32():lon(-1),lat(-1){}
+    int32_t lon;
+    int32_t lat;
+};
+
+struct Rect
+{
+    double x_min;
+    double y_min;
+    double x_max;
+    double y_max;
+    double x_radius;
+    double y_radius;
+};
+
+
+// 求两数字最小值
+#ifndef COM_MIN
+#define COM_MIN(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
+// 求两数字最大值
+#ifndef COM_MAX
+#define COM_MAX(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
+
+
+struct AddressInfo
+{
+    std::string key;    //HomeAddress, CompanyAddress
+    int32_t lat;          //10的7次方
+    int32_t lng;          //10的7次方
+    AddressInfo(const std::string &key_):
+    key(key_),
+    lat(-1),
+    lng(-1)
+    {
+
+    }
+};
+
+static std::string BANMA_URL[3]={
+"http://pre.gw.zebred.com/router/rest",    //daily
+"http://pre.gw.zebred.com/router/rest",    //pre
+"http://gw.zebred.com/router/rest"         //pub
+};
+
+
+}
+
+#endif /* COMMON_DEF_H_ */
+
+
+
